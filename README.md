@@ -335,7 +335,4 @@ Ideas to extend this project:
 
 ---
 
-## 8. License
-
-Add your preferred license here (e.g., MIT) if you intend to make the project public.
 

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
-from step5_ranking_pipeline import RankingPipeline, load_training_data
+from pipeline import RankingPipeline, load_training_data
 
 DATA_PATH = Path(__file__).parent / "AI_Resume_Screening.csv"
 

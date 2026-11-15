@@ -94,6 +94,8 @@ class RankingPipeline:
     def fit(self, df: pd.DataFrame):
         # Assumes df is the full training dataset
         df = df.copy()
+        # LightGBM group sizes describe consecutive rows, one block per role.
+        df = df.sort_values("Job Role", kind="stable")
         df["Skills"] = self._normalize_skills(df["Skills"])
 
         # Build profiles, tfidf, and skill_profile_cosine

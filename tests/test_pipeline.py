@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import lightgbm as lgb
 
 from pipeline import RankingPipeline
 
@@ -50,6 +51,44 @@ class RankingGroupTests(unittest.TestCase):
 
     def test_already_grouped_roles_remain_aligned(self):
         self.assert_training_groups(["Researcher", "Researcher", "Researcher", "Coder", "Coder"])
+
+
+class RankingLabelTests(unittest.TestCase):
+    def frame(self, scores):
+        n = len(scores)
+        return pd.DataFrame({
+            "Job Role": ["Synthetic Role"] * n,
+            "Skills": ["python,sql"] * n,
+            "Experience (Years)": np.arange(n),
+            "Salary Expectation ($)": [50000] * n,
+            "Projects Count": [2] * n,
+            "Education": ["B.Sc"] * n,
+            "Certifications": [None] * n,
+            "AI Score (0-100)": scores,
+        })
+
+    def test_relevance_labels_include_zero_and_bin_boundaries(self):
+        scores = [0, 20, 20.01, 40, 40.01, 60, 60.01, 80, 80.01, 100]
+        with patch("pipeline.lgb.LGBMRanker") as ranker:
+            RankingPipeline().fit(self.frame(scores))
+        labels = ranker.return_value.fit.call_args.args[1]
+        np.testing.assert_array_equal(labels, [0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+
+    def test_zero_score_is_accepted_by_native_lightgbm(self):
+        native = lgb.LGBMRanker(objective="lambdarank", n_estimators=2,
+                               min_child_samples=1, n_jobs=1, verbosity=-1)
+        with patch("pipeline.lgb.LGBMRanker", return_value=native):
+            pipeline = RankingPipeline()
+            pipeline.fit(self.frame([0, 25, 75, 100]))
+        self.assertIs(pipeline.model, native)
+        self.assertTrue(hasattr(native, "booster_"))
+
+    def test_invalid_scores_are_rejected_before_model_training(self):
+        for score in [-1, 101, np.nan, np.inf]:
+            with self.subTest(score=score), patch("pipeline.lgb.LGBMRanker") as ranker:
+                with self.assertRaisesRegex(ValueError, "AI Score"):
+                    RankingPipeline().fit(self.frame([score, 50]))
+                ranker.assert_not_called()
 
 
 if __name__ == "__main__":

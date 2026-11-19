@@ -27,7 +27,7 @@ def build_features(df: pd.DataFrame):
     cat_cols = ["Education", "Certifications"]
     X_cat_input = df[cat_cols].fillna("Unknown").astype(str)
 
-    ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
+    ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
     X_cat = ohe.fit_transform(X_cat_input)
 
     # Simple label: AI Score (0-100) as relevance label

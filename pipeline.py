@@ -111,9 +111,11 @@ class RankingPipeline:
 
         # Convert continuous AI Score (0-100) into discrete relevance levels 0-4
         raw_scores = df["AI Score (0-100)"].astype(float).to_numpy()
+        if not (np.isfinite(raw_scores).all() and ((raw_scores >= 0) & (raw_scores <= 100)).all()):
+            raise ValueError("AI Score (0-100) values must be finite and between 0 and 100.")
         # Bins: [0,20] -> 0, (20,40] -> 1, (40,60] -> 2, (60,80] -> 3, (80,100] -> 4
-        bins = [0, 20, 40, 60, 80, 100]
-        y = np.digitize(raw_scores, bins, right=True) - 1
+        bins = [20, 40, 60, 80]
+        y = np.digitize(raw_scores, bins, right=True)
 
         # Group by Job Role
         roles = df["Job Role"].astype(str).to_numpy()
